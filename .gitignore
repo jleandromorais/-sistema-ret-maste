@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Dados sensíveis e gerados
+*.db
+*.sqlite
+*.sqlite3
+RET_dados.db
+RET_Relatorio.xlsx
+get-pip.py
+
+# PDFs (caso tenha PDFs de teste)
+*.pdf
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Temporários
+*.tmp
+*.temp
+~*
