@@ -1,6 +1,36 @@
-# 🚀 Sistema RET Master - Processamento Automatizado de Encargos
+# 🚀 Sistema RET Master
 
-Sistema moderno e intuitivo para processamento de PDFs de RET (Receita de Encargos e Tarifas), com interface gráfica avançada e exportação profissional para Excel.
+[![Python](https://img.shields.io/badge/Python-3.14-blue.svg)](https://python.org)
+[![CustomTkinter](https://img.shields.io/badge/CustomTkinter-5.2+-green.svg)](https://github.com/TomSchimansky/CustomTkinter)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-2.0-orange.svg)](CHANGELOG.md)
+
+> **Sistema moderno e profissional para processamento automatizado de PDFs de RET (Receita de Encargos e Tarifas)**
+
+Interface gráfica avançada com CustomTkinter, extração inteligente de dados e exportação para Excel profissionalmente formatado.
+
+---
+
+## 📸 Preview
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  🚀 Sistema RET Master    Processamento Automatizado        │
+├────────────────┬──────────────────────────────────────────┤
+│  SELEÇÃO       │  RESULTADOS                              │
+│                │  ┌────────────────────────────────┐      │
+│  📁 Pasta      │  │ Resumo │ Dados │ Logs │       │      │
+│  ☑ EAT         │  ├────────────────────────────────┤      │
+│  ☑ Penalidades │  │  PDFs: 35                      │      │
+│  ☑ TOP         │  │  Valores: 261                  │      │
+│                │  │  Total: EUR 92M+               │      │
+│  ▶ PROCESSAR   │  └────────────────────────────────┘      │
+├────────────────┴──────────────────────────────────────────┤
+│  💰 TOTAL: EUR 92,036,573.52    💾 Salvar  📊 Exportar    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
 
 ## ✨ Funcionalidades Principais
 
