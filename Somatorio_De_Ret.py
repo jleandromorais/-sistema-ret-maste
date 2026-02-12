@@ -14,6 +14,9 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
+# Taxa de câmbio EUR → BRL (ajuste conforme a cotação desejada)
+TAXA_EUR_BRL = 6.0
+
 class SistemaRET(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -130,6 +133,7 @@ class SistemaRET(ctk.CTk):
         self.tabview.add("Resumo")
         self.tabview.add("Dados Detalhados")
         self.tabview.add("Logs")
+        self.tabview.add("Sem Valores")
         
         # ABA RESUMO
         self.frame_resumo = ctk.CTkScrollableFrame(self.tabview.tab("Resumo"))
@@ -154,6 +158,14 @@ class SistemaRET(ctk.CTk):
         )
         self.txt_logs.pack(fill="both", expand=True, padx=10, pady=10)
         
+        # ABA SEM VALORES (PDFs processados mas sem valores extraídos)
+        self.txt_sem_valores = ctk.CTkTextbox(
+            self.tabview.tab("Sem Valores"),
+            font=("Consolas", 11)
+        )
+        self.txt_sem_valores.pack(fill="both", expand=True, padx=10, pady=10)
+        self.txt_sem_valores.insert("end", "Nenhum processamento realizado.\nSelecione a pasta e clique em PROCESSAR PDFs.")
+        
         # RODAPÉ
         footer = ctk.CTkFrame(self, height=100, corner_radius=15, fg_color="#1a1a2e")
         footer.pack(fill="x", padx=20, pady=(0, 20))
@@ -171,7 +183,7 @@ class SistemaRET(ctk.CTk):
         
         self.lbl_total = ctk.CTkLabel(
             result_frame,
-            text="EUR 0,00",
+            text="R$ 0,00",
             font=("Roboto", 28, "bold"),
             text_color="#00d9ff"
         )
@@ -346,9 +358,8 @@ class SistemaRET(ctk.CTk):
             for ficheiro in ficheiros:
                 if ficheiro.lower().endswith('.pdf'):
                     caminho_completo = os.path.join(raiz, ficheiro)
-                    
-                    # Verificar se o tipo está ativo
                     tipo = self._identificar_tipo(caminho_completo)
+                    
                     if tipo not in tipos_ativos and tipo != 'Outros':
                         continue
                     
@@ -370,16 +381,22 @@ class SistemaRET(ctk.CTk):
     
     def _mostrar_resultados(self, total_arquivos):
         """Exibe resultados do processamento"""
+        # Sempre atualizar a aba Sem Valores (mesmo quando nenhum foi processado)
+        self._mostrar_sem_valores()
+        
         if not self.dados_processados:
-            messagebox.showwarning("Aviso", "Nenhum PDF encontrado!")
+            messagebox.showwarning("Aviso", "Nenhum PDF foi processado! Verifique a pasta e os tipos de encargo selecionados.")
             return
         
         # Calcular estatísticas
         total_geral = sum(d['valor_total'] for d in self.dados_processados)
         com_valores = len([d for d in self.dados_processados if d['valor_total'] > 0])
         
+        # Converter para Reais (BRL)
+        total_geral_brl = total_geral * TAXA_EUR_BRL
+        
         # Atualizar total
-        self.lbl_total.configure(text=f"EUR {total_geral:,.2f}")
+        self.lbl_total.configure(text=f"R$ {total_geral_brl:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         
         # Resumo por tipo
         resumo_tipos = {}
@@ -394,20 +411,23 @@ class SistemaRET(ctk.CTk):
         for widget in self.frame_resumo.winfo_children():
             widget.destroy()
         
+        total_brl_fmt = f"R$ {total_geral_brl:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
         stats_text = f"""
 ESTATÍSTICAS DO PROCESSAMENTO
 
 Total de PDFs: {total_arquivos}
 PDFs com valores: {com_valores}
-Valor Total: EUR {total_geral:,.2f}
+Valor Total: {total_brl_fmt}
 
 RESUMO POR TIPO:
 """
         
         for tipo, stats in resumo_tipos.items():
+            total_tipo_brl = stats['total'] * TAXA_EUR_BRL
+            total_tipo_fmt = f"R$ {total_tipo_brl:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
             stats_text += f"\n{tipo}:\n"
             stats_text += f"  - Arquivos: {stats['count']}\n"
-            stats_text += f"  - Total: EUR {stats['total']:,.2f}\n"
+            stats_text += f"  - Total: {total_tipo_fmt}\n"
         
         ctk.CTkLabel(
             self.frame_resumo,
@@ -423,7 +443,8 @@ RESUMO POR TIPO:
         self.log(f"PROCESSAMENTO CONCLUÍDO - {total_arquivos} arquivos")
         self.log("="*60)
         
-        messagebox.showinfo("Sucesso", f"Processados {total_arquivos} PDFs!\nTotal: EUR {total_geral:,.2f}")
+        total_msg = f"R$ {total_geral_brl:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        messagebox.showinfo("Sucesso", f"Processados {total_arquivos} PDFs!\nTotal: {total_msg}")
     
     def _mostrar_dados_detalhados(self):
         """Mostra tabela com dados detalhados"""
@@ -448,20 +469,21 @@ RESUMO POR TIPO:
                 font=("Roboto", 11, "bold")
             ).pack(side="left", padx=2)
         
-        # Dados
+        # Dados (valores em Reais na exibição)
         for d in self.dados_processados[:50]:  # Limitar para não sobrecarregar
             row = ctk.CTkFrame(self.frame_dados, fg_color="#34495e")
             row.pack(fill="x", pady=1)
-            
+            v_total_brl = d['valor_total'] * TAXA_EUR_BRL
+            v_unit_brl = d['valor_unitario'] * TAXA_EUR_BRL
             valores = [
                 (d['tipo_encargo'], 80),
                 (d['empresa'], 150),
                 (d['nota_tipo'], 80),
                 (d['numero_nd'], 100),
                 (d['data_vencimento'], 100),
-                (f"{d['valor_total']:.2f}", 120),
+                (f"{v_total_brl:.2f}", 120),
                 (f"{d['quantidade']:.2f}", 80),
-                (f"{d['valor_unitario']:.2f}", 100)
+                (f"{v_unit_brl:.2f}", 100)
             ]
             
             for val, w in valores:
@@ -471,6 +493,28 @@ RESUMO POR TIPO:
                     width=w,
                     font=("Roboto", 10)
                 ).pack(side="left", padx=2)
+    
+    def _mostrar_sem_valores(self):
+        """Preenche a aba Sem Valores com os PDFs processados nos quais não foi extraído nenhum valor"""
+        self.txt_sem_valores.delete("1.0", "end")
+        if not self.dados_processados:
+            self.txt_sem_valores.insert("end", "Nenhum processamento realizado.\nSelecione a pasta e clique em PROCESSAR PDFs.")
+            return
+        sem_valores = [d for d in self.dados_processados if not d.get('valores_encontrados') or d.get('valor_total', 0) == 0]
+        if not sem_valores:
+            self.txt_sem_valores.insert("end", "Nenhum arquivo sem valores.\n\nTodos os PDFs processados tiveram pelo menos um valor extraído.")
+            return
+        self.txt_sem_valores.insert("end", f"ARQUIVOS SEM VALORES ({len(sem_valores)})\n")
+        self.txt_sem_valores.insert("end", "PDFs lidos nos quais não foi possível extrair valores (valor total = 0):\n")
+        self.txt_sem_valores.insert("end", "=" * 60 + "\n\n")
+        for i, d in enumerate(sem_valores, 1):
+            arquivo = d.get("arquivo", "")
+            caminho = d.get("caminho", "")
+            tipo = d.get("tipo_encargo", "")
+            self.txt_sem_valores.insert("end", f"{i:4}. [{tipo}] {arquivo}\n")
+            self.txt_sem_valores.insert("end", f"      Nenhum valor extraído\n")
+            self.txt_sem_valores.insert("end", f"      {caminho}\n\n")
+        self.txt_sem_valores.see("1.0")
     
     def salvar_db(self):
         """Salva dados no banco de dados SQLite"""
@@ -623,13 +667,14 @@ RESUMO POR TIPO:
             total_qt = df['QT'].sum()
             total_arquivos = len(df)
             
+            total_geral_brl = total_geral * TAXA_EUR_BRL
             dados_geral = [
                 ['RESUMO GERAL DO PROCESSAMENTO', ''],
                 ['', ''],
                 ['Métrica', 'Valor'],
                 ['Total de PDFs Processados', total_arquivos],
                 ['Quantidade Total (QT)', total_qt],
-                ['Valor Total (EUR)', total_geral],
+                ['Valor Total (R$)', total_geral_brl],
                 ['', ''],
                 ['Data do Processamento', datetime.now().strftime('%Y-%m-%d %H:%M:%S')]
             ]
@@ -637,10 +682,8 @@ RESUMO POR TIPO:
             for r_idx, row in enumerate(dados_geral, 1):
                 for c_idx, value in enumerate(row, 1):
                     cell = ws_geral.cell(row=r_idx, column=c_idx, value=value)
-                    
                     if r_idx == 1:
                         cell.font = Font(bold=True, size=16, color="1F4788")
-                        ws_geral.merge_cells(f'A1:B1')
                     elif r_idx == 3:
                         cell.fill = header_fill
                         cell.font = header_font
@@ -648,6 +691,9 @@ RESUMO POR TIPO:
                         cell.alignment = Alignment(horizontal='left', vertical='center')
                         if c_idx == 2 and isinstance(value, (int, float)):
                             cell.number_format = '#,##0.00'
+                # Mesclar célula do título só depois de escrever toda a linha (evita MergedCell read-only)
+                if r_idx == 1:
+                    ws_geral.merge_cells('A1:B1')
             
             ws_geral.column_dimensions['A'].width = 30
             ws_geral.column_dimensions['B'].width = 25
