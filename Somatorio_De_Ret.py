@@ -85,26 +85,6 @@ class SistemaRET(ctk.CTk):
             hover_color="#1976D2"
         ).pack(pady=10, padx=20, fill="x")
         
-        # SEPARADOR
-        ctk.CTkFrame(left, height=2, fg_color="#404040").pack(fill="x", pady=20, padx=20)
-        
-        # CONFIGURAÇÕES
-        ctk.CTkLabel(
-            left, 
-            text="Tipos de Encargo", 
-            font=("Roboto", 18, "bold")
-        ).pack(pady=(10, 5), padx=20, anchor="w")
-        
-        self.tipos_encargo = {
-            "EAT": ctk.CTkCheckBox(left, text="EAT (Encargos de Acesso e Transporte)"),
-            "Penalidades": ctk.CTkCheckBox(left, text="Penalidades"),
-            "TOP": ctk.CTkCheckBox(left, text="TOP (Takeoff Point)")
-        }
-        
-        for chk in self.tipos_encargo.values():
-            chk.select()
-            chk.pack(pady=5, padx=30, anchor="w")
-        
         # BOTÃO PROCESSAR
         ctk.CTkButton(
             left,
@@ -351,19 +331,12 @@ class SistemaRET(ctk.CTk):
         self.dados_processados = []
         arquivos_processados = 0
         
-        # Filtrar tipos selecionados
-        tipos_ativos = [k for k, v in self.tipos_encargo.items() if v.get()]
-        
         for raiz, _, ficheiros in os.walk(self.pasta_selecionada):
             for ficheiro in ficheiros:
                 if ficheiro.lower().endswith('.pdf'):
                     caminho_completo = os.path.join(raiz, ficheiro)
-                    tipo = self._identificar_tipo(caminho_completo)
                     
-                    if tipo not in tipos_ativos and tipo != 'Outros':
-                        continue
-                    
-                    self.log(f"[PDF] {ficheiro}")
+                    self.log(f"[PDF] Processando: {ficheiro}")
                     
                     dados_pdf = self.extrair_dados_pdf(caminho_completo)
                     
